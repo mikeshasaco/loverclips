@@ -34,6 +34,14 @@ const bannerPreview = ref(props.profile?.banner_url || null);
 const handleAvatarChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+        // Check file size (5MB = 5 * 1024 * 1024 bytes)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            alert(`Profile picture is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 5MB. Please compress or resize your image.`);
+            event.target.value = ''; // Clear the input
+            return;
+        }
+        
         form.avatar = file;
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -46,6 +54,14 @@ const handleAvatarChange = (event) => {
 const handleBannerChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+        // Check file size (10MB = 10 * 1024 * 1024 bytes)
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            alert(`Banner image is too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Maximum size is 10MB. Please compress or resize your image.`);
+            event.target.value = ''; // Clear the input
+            return;
+        }
+        
         form.banner = file;
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -170,10 +186,13 @@ const submitForm = () => {
                 <input
                     id="avatar"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     @change="handleAvatarChange"
                     class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300"
                 />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Maximum file size: 5MB. Supported formats: JPEG, PNG, GIF, WebP
+                </p>
                 <div v-if="avatarPreview" class="mt-4">
                     <img :src="avatarPreview" alt="Avatar preview" class="w-24 h-24 rounded-full object-cover" />
                 </div>
@@ -186,10 +205,13 @@ const submitForm = () => {
                 <input
                     id="banner"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                     @change="handleBannerChange"
                     class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-300"
                 />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Maximum file size: 10MB. Supported formats: JPEG, PNG, GIF, WebP
+                </p>
                 <div v-if="bannerPreview" class="mt-4">
                     <img :src="bannerPreview" alt="Banner preview" class="w-full h-48 object-cover rounded" />
                 </div>

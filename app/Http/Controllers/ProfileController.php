@@ -74,24 +74,24 @@ class ProfileController extends Controller
             $profile = $user->profile;
         }
 
-        // Handle avatar upload
+        // Handle avatar upload - store as base64 in database
         if ($request->hasFile('avatar')) {
-            if ($profile->avatar_url) {
-                $oldPath = str_replace('/storage/', '', $profile->avatar_url);
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
-            }
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $profile->avatar_url = \Illuminate\Support\Facades\Storage::url($path);
+            $file = $request->file('avatar');
+            $imageData = file_get_contents($file->getRealPath());
+            $base64 = base64_encode($imageData);
+            $mimeType = $file->getMimeType();
+            // Store as data URI: data:image/jpeg;base64,{base64_string}
+            $profile->avatar_url = 'data:' . $mimeType . ';base64,' . $base64;
         }
 
-        // Handle banner upload
+        // Handle banner upload - store as base64 in database
         if ($request->hasFile('banner')) {
-            if ($profile->banner_url) {
-                $oldPath = str_replace('/storage/', '', $profile->banner_url);
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
-            }
-            $path = $request->file('banner')->store('banners', 'public');
-            $profile->banner_url = \Illuminate\Support\Facades\Storage::url($path);
+            $file = $request->file('banner');
+            $imageData = file_get_contents($file->getRealPath());
+            $base64 = base64_encode($imageData);
+            $mimeType = $file->getMimeType();
+            // Store as data URI: data:image/jpeg;base64,{base64_string}
+            $profile->banner_url = 'data:' . $mimeType . ';base64,' . $base64;
         }
 
         // Update bio and location - always update from input() if present

@@ -32,9 +32,84 @@
             </div>
 
             <!-- Chat Interface -->
-            <div v-if="hasAccess" class="flex-1 flex flex-col overflow-hidden">
+            <div v-if="hasAccess" class="flex-1 flex overflow-hidden">
+                <!-- Sidebar with followed users' videos -->
+                <div 
+                    v-show="sidebarOpen"
+                    class="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300 relative"
+                >
+                    <!-- Collapse Arrow Button -->
+                    <button
+                        @click="sidebarOpen = false"
+                        class="absolute top-1/2 -right-4 transform -translate-y-1/2 z-20 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-r-lg p-2 shadow-lg hover:shadow-xl transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:border-blue-500"
+                        title="Collapse sidebar"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                    <div class="p-4">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Following</h2>
+                        <div v-if="followedPosts && followedPosts.length > 0" class="space-y-3">
+                            <div
+                                v-for="followedPost in followedPosts"
+                                :key="followedPost.id"
+                                @click="switchToPost(followedPost)"
+                                :class="[
+                                    'cursor-pointer rounded-lg overflow-hidden border-2 transition-all hover:shadow-lg',
+                                    followedPost.id === post.id 
+                                        ? 'border-blue-500 shadow-md' 
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-blue-300'
+                                ]"
+                            >
+                                <div class="relative aspect-video bg-black">
+                                    <img
+                                        v-if="followedPost.thumbnail_url"
+                                        :src="followedPost.thumbnail_url"
+                                        :alt="followedPost.title"
+                                        class="w-full h-full object-cover"
+                                    />
+                                    <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
+                                        No Thumbnail
+                                    </div>
+                                    <div
+                                        v-if="followedPost.is_paid"
+                                        class="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold"
+                                    >
+                                        ${{ followedPost.price }}
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <h3 class="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">
+                                        {{ followedPost.title }}
+                                    </h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        {{ followedPost.user?.name }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+                            <p class="text-sm">No posts from users you follow</p>
+                            <p class="text-xs mt-2">Start following users to see their videos here</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Chat Messages -->
-                <div ref="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+                <div class="flex-1 flex flex-col overflow-hidden relative">
+                    <!-- Sidebar Toggle Button (when collapsed) -->
+                    <button
+                        v-if="!sidebarOpen"
+                        @click="sidebarOpen = true"
+                        class="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-lg hover:shadow-xl transition-all text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                        title="Show sidebar"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div ref="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
                     <!-- Welcome Message (if no conversation) -->
                     <div v-if="!conversation && !loading" class="flex justify-center">
                         <button
@@ -53,7 +128,7 @@
                             <div class="max-w-[85%] md:max-w-md">
                                 <!-- Video (if girl message with video) -->
                                 <div v-if="message.video_url && message.sender_type === 'girl'" class="mb-2 bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                                    <div class="aspect-video bg-black relative">
+                                    <div class="w-[300px] h-[450px] bg-black relative">
                                         <video
                                             :ref="el => setVideoRef(el, message)"
                                             :src="message.video_url"
@@ -146,6 +221,12 @@
                             End of story. Thanks for watching! 🎉
                         </div>
                     </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+                        <!-- Input will be handled by scene options above -->
+                    </div>
                 </div>
             </div>
 
@@ -197,6 +278,10 @@ const props = defineProps({
     hasAccess: Boolean,
     isOwner: Boolean,
     conversation: Object,
+    followedPosts: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const chatContainer = ref(null);
@@ -205,6 +290,7 @@ const loading = ref(false);
 const starting = ref(false);
 const replying = ref(false);
 const purchasing = ref(false);
+const sidebarOpen = ref(true); // Sidebar is open by default
 const videoRefs = ref(new Map());
 const videoPlayingStates = ref(new Map());
 const videoDisplayTimes = ref(new Map());
@@ -217,6 +303,17 @@ const currentSceneOptions = computed(() => {
     if (!conversation.value?.current_scene) return null;
     return conversation.value.current_scene.options || [];
 });
+
+const switchToPost = (targetPost) => {
+    // Don't switch if it's the same post
+    if (targetPost.id === props.post.id) return;
+    
+    // Navigate to the new post
+    const username = targetPost.user?.username || targetPost.user?.id;
+    if (username) {
+        router.visit(`/@${username}/posts/${targetPost.slug}`);
+    }
+};
 
 const startConversation = async () => {
     if (starting.value) return;

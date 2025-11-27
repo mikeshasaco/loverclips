@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
@@ -38,6 +37,7 @@ class ProfileController extends Controller
             'name' => 'sometimes|string|max:255',
             'bio' => 'nullable|string',
             'avatar' => 'nullable|image|max:5120', // 5MB max
+            'banner' => 'nullable|image|max:10240', // 10MB max
         ]);
 
         // Update user name if provided
@@ -48,16 +48,24 @@ class ProfileController extends Controller
         // Get or create profile
         $profile = $user->profile ?? new Profile(['user_id' => $user->id]);
 
-        // Handle avatar upload
+        // Handle avatar upload - store as base64 in database
         if ($request->hasFile('avatar')) {
-            // Delete old avatar
-            if ($profile->avatar_url) {
-                $oldPath = str_replace('/storage/', '', $profile->avatar_url);
-                Storage::disk('public')->delete($oldPath);
-            }
+            $file = $request->file('avatar');
+            $imageData = file_get_contents($file->getRealPath());
+            $base64 = base64_encode($imageData);
+            $mimeType = $file->getMimeType();
+            // Store as data URI: data:image/jpeg;base64,{base64_string}
+            $profile->avatar_url = 'data:' . $mimeType . ';base64,' . $base64;
+        }
 
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $profile->avatar_url = Storage::url($path);
+        // Handle banner upload - store as base64 in database
+        if ($request->hasFile('banner')) {
+            $file = $request->file('banner');
+            $imageData = file_get_contents($file->getRealPath());
+            $base64 = base64_encode($imageData);
+            $mimeType = $file->getMimeType();
+            // Store as data URI: data:image/jpeg;base64,{base64_string}
+            $profile->banner_url = 'data:' . $mimeType . ';base64,' . $base64;
         }
 
         // Update bio

@@ -29,6 +29,22 @@ class HomeController extends Controller
 
         $posts = $query->get();
 
+        // Get feed posts: posts from users the current user follows
+        $feedPosts = collect();
+        $user = $request->user();
+        if ($user) {
+            // Get IDs of users this user is following
+            $followingIds = $user->following()->pluck('users.id');
+
+            if ($followingIds->isNotEmpty()) {
+                $feedPosts = Post::where('is_published', true)
+                    ->whereIn('user_id', $followingIds)
+                    ->with(['user'])
+                    ->latest()
+                    ->get();
+            }
+        }
+
         // Get all unique categories from published posts
         $categories = Post::where('is_published', true)
             ->whereNotNull('category')
@@ -41,6 +57,7 @@ class HomeController extends Controller
         return Inertia::render('Home', [
             'latestPosts' => $latestPosts,
             'posts' => $posts,
+            'feedPosts' => $feedPosts,
             'categories' => $categories,
             'selectedCategory' => $request->category,
         ]);

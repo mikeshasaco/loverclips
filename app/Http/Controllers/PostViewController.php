@@ -26,11 +26,24 @@ class PostViewController extends Controller
         // This ensures the chat restarts from the beginning every time
         $conversation = null;
 
+        // Get posts from users the current user follows (for sidebar)
+        $followedPosts = collect();
+        if ($user) {
+            $followingIds = $user->following()->pluck('users.id');
+            $followedPosts = Post::whereIn('user_id', $followingIds)
+                ->where('is_published', true)
+                ->with(['user', 'welcomeScene'])
+                ->latest()
+                ->limit(20)
+                ->get();
+        }
+
         return Inertia::render('Post/Show', [
             'post' => $post,
             'hasAccess' => $hasAccess,
             'isOwner' => $user && $post->user_id === $user->id,
             'conversation' => $conversation, // Always null to start fresh
+            'followedPosts' => $followedPosts, // Posts from followed users for sidebar
         ]);
     }
 }
